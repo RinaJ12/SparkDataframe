@@ -1,0 +1,144 @@
+spark-shell --packages com.databricks:spark-csv_2.11:1.5.0 --master yarn-cluster
+spark-shell --packages com.databricks:spark-csv_2.10:1.4.0
+
+
+1) Dataframe created in spark.
+
+val raw_tran = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").load("cc_tran1/credicard_tran1.csv");
+
+raw_tran: org.apache.spark.sql.DataFrame = [Year_Month: int, Agency_Number: int, Agency_Name: string, Cardholder_Last_Name: string, Cardholder_First_Initial: string, Description: string, Amount: double, Vendor: string, Transaction_Date: string, Posted_Date: string, Merchant_Category_Code: string]
+
+
+val cc_schema = StructType(Array(StructField(year_month,int,true),StructField(agency_number,int),StructField(agency_name,string,true),StructField(ch_lname,string,false),StructField(ch_fname_ini,string,false),StructField(description,string,true),StructField(amount,double,true),StructField(tran_date,string,true),StructField(posted_date,string,true),StructField(mcc,string,false)))
+
+
+
+org.apache.spark.sql.types.StructType = StructType(StructField(Year_Month,IntegerType,true), StructField(Agency_Number,IntegerType,true), StructField(Agency_Name,StringType,true), StructField(Cardholder_Last_Name,StringType,true), StructField(Cardholder_First_Initial,StringType,true), StructField(Description,StringType,true), StructField(Amount,DoubleType,true), StructField(Vendor,StringType,true), StructField(Transaction_Date,StringType,true), StructField(Posted_Date,StringType,true), StructField(Merchant_Category_Code,StringType,true))
+
+
+val raw_tran = sqlContext.read.format("com.databricks.spark.csv")
+			      .option("header", "true")                             
+			      .schema(cc_schema)
+                              .load("cc_tran1/credicard_tran1.csv");
+
+=>Convert CSV to Parquet
+1)create csv dataframe and write it to parquet file
+sqlContext.setConf("spark.sql.parquet.compression.codec","snappy");
+raw_tran.write.parquet("cc_tran1/parquet_tran/cc_tran.parquet");
+
+2)load parquet file using parquet dataframe
+val parquet_cc_tran = sqlContext.read.parquet("cc_tran1/parquet_tran/cc_tran.parquet");
+
+=> Query using SparkSql
+1) register dataframe
+
+parquet_cc_tran.registerTempTable("cc_tran");
+sqlContext.sql("select *from cc_tran").show();
+
+val cc_tran_groupby = sqlContext.sql("select Year_Month,Cardholder_Last_Name,Cardholder_First_Initial,Amount from cc_tran").groupBy("Year_Month").agg(max("amount").alias("max_amount"),min("amount").alias("min_amount"),sum("amount").alias("total_amount")).where(col("max_amount")>1089180.0);
+
+
+=> cache rdd for fast access
+
+raw_tran.cache()
+import org.apache.spark.storage.StorageLevel._
+
+raw_tran.persist(MEMORY_ONLY_SER);
+
+===========================================================================================
+submit spark application in yarn cluster mode
+
+/home/cloudera/workspace/spark_app.jar
+
+spark-submit \
+--class spark.scala.ScalaSpark \
+--master yarn \
+--deploy-mode cluster \
+--packages com.databricks:spark-csv_2.11:1.5.0 \
+--num-executors 1 \
+--executor-cores 1 \
+--executor-memory 1600M \
+/home/cloudera/workspace/spark_app.jar
+
+========================================================
+
+val list = Seq(("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1),("abc",1),("pqr",2),("def",1),("mno",3),("str",2),("ghj",7),("iop",8),("dfs",1))
+=============================================================
+Transaction Analysis
+=============================================================
+
+Year_Month,201307
+Agency_Number,1000
+Agency_Name,OKLAHOMA STATE UNIVERSITY
+Cardholder_Last_Name,Mason
+Cardholder_First_Initial,C
+Description,GENERAL PURCHASE
+Amount,890
+Vendor,NACAS
+Transaction_Date,07/30/2013 12:00:00 AM
+Posted_Date,07/31/2013 12:00:00 AM
+Merchant_Category_Code,CHARITABLE AND SOCIAL SERVICE ORGANIZATIONS
+
+1)Card Holder spending very less
+2)Card Holder spending very high
+3)Card Holder and Vendor relation
+4)Card Holder and Merchant Category relation
+5)Merchant and Vendor relation
+6)Busy Day
+
+
+val parquet_cc_tran = sqlContext.read.parquet("cc_tran1/parquet_tran/cc_tran.parquet");
+parquet_cc_tran.registerTempTable("cc_tran");
+sqlContext.sql("select *from cc_tran").show();
+
+=> Per merchant category
+-Number of Transactions
+
+val num_of_tran_per_mcc = parquet_cc_tran.groupBy("Merchant_Category_Code").count();
+
+-Number of Customers
+
+val num_cust_mcc = sqlContext.sql("select Merchant_Category_Code,count(distinct Cardholder_Last_Name) from cc_tran group by Merchant_Category_Code")
+val num_cust_mcc = parquet_cc_tran.groupBy("Merchant_Category_Code").agg(countDistinct(concat(col("Cardholder_Last_Name"),col("Cardholder_First_Initial"))).alias("total_customer"));
+
+//to generate only one output file add repartition
+num_cust_mcc.orderBy("Merchant_Category_Code").repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/num_cust_mcc.csv");
+
+//Merchant and Vendor relation
+val num_mcht_vend = parquet_cc_tran.groupBy("Merchant_Category_Code").agg(countDistinct("Agency_Number").alias("total_agency"));
+num_mcht_vend.orderBy("Merchant_Category_Code","total_agency").repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/num_mcht_vend.csv");
+
+//customer vendor relationship
+val vendors = parquet_cc_tran.select("Vendor").distinct();
+vendors.orderBy("Vendor").repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/vendors.csv");
+
+//number of customers per vendors
+val vendors = parquet_cc_tran.groupBy("Vendor").agg(countDistinct(col("Cardholder_Last_Name")+col("Cardholder_First_Initial"))).show()
+val num_cust_ven = parquet_cc_tran.groupBy("Vendor").agg(countDistinct(concat(col("Cardholder_Last_Name"),col("Cardholder_First_Initial"))))
+
+//Card Holder spending very less top 50
+val less_spending_cust = parquet_cc_tran.groupBy(concat(col("Cardholder_Last_Name"),col("Cardholder_First_Initial"))).agg(sum("Amount").alias("total_spending")).orderBy("total_spending").limit(50);
+
+less_spending_cust.repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/less_spending_cust.csv");
+
+//Card Holder spending very high
+val high_spending_cust =  parquet_cc_tran.groupBy(concat(col("Cardholder_Last_Name"),col("Cardholder_First_Initial"))).agg(sum("Amount").alias("total_spending")).orderBy(col("total_spending").desc).limit(50);
+high_spending_cust.repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/high_spending_cust.csv");
+
+//Busy Day
+val busy_days = parquet_cc_tran.groupBy("Transaction_Date").count().orderBy(col("count").desc).limit(50);
+busy_days.repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/busy_days.csv");
+
+//least busy days
+val least_busy_days = parquet_cc_tran.groupBy("Transaction_Date").count().orderBy(col("count")).limit(50);
+least_busy_days.repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/least_busy_days.csv");
+
+//card processing days
+
+val count_tran_post_days = parquet_cc_tran.withColumn("processing_days",datediff(to_date(unix_timestamp(col("Posted_Date"),"MM/dd/yyyy HH:mm:ss").cast("timestamp")),to_date(unix_timestamp(col("Transaction_Date"),"MM/dd/yyyy HH:mm:ss").cast("timestamp")))).withColumn("card_holder_name",concat(col("Cardholder_Last_Name"),col("Cardholder_First_Initial"))).select("card_holder_name","Transaction_Date","Posted_Date","processing_days").orderBy(col("processing_days").desc).limit(50);
+
+count_tran_post_days.repartition(1).write.format("com.databricks.spark.csv").save("cc_tran1/analytics/count_tran_post_days.csv");
+
+//customer vendor relationship
+
+val num_cust_ven = parquet_cc_tran.groupBy(col("Vendor")).agg(countDistinct(concat(col("Cardholder_Last_Name"),col("Cardholder_First_Initial"))))
